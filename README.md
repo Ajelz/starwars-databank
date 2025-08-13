@@ -67,77 +67,70 @@ npm run preview
 
 ```mermaid
 flowchart TB
-  %% ---------- Build / HTML ----------
+  %% Build & HTML
   subgraph Build["Build & HTML"]
     Vite["Vite (dev/build)"]
     Index["index.html"]
     Vite --> Index
   end
 
-  %% ---------- React SPA ----------
-  subgraph SPA["React 19 Single-Page App"]
-    Main["src/main.jsx\nRoot mount"]
-    Providers["<Provider store>\nColorModeContext\n<ThemeProvider> + <CssBaseline>"]
-    App["src/App.jsx\nAppBar • GlobalProgress • Container • Footer • Starfield"]
-    PeoplePage["features/people/PeoplePage.jsx\nSearch (debounced) + URL sync"]
-    PeopleTable["features/people/PeopleTable.jsx\nTable/cards • pagination • dialogs"]
-    PersonDialog["features/people/PersonDialog.jsx\nhomeworld/species/films"]
-    VehiclesDialog["features/vehicles/VehiclesDialog.jsx\nvehicles + starships"]
-    Theme["app/theme.js\nMUI theme"]
+  %% React SPA
+  subgraph SPA["React single-page app"]
+    Main["main.jsx"]
+    Providers["Providers: Redux, Theme, ColorMode, CssBaseline"]
+    App["App.jsx (AppBar, GlobalProgress, Container, Footer, Starfield)"]
+    PeoplePage["PeoplePage.jsx (search, debounce, URL sync)"]
+    PeopleTable["PeopleTable.jsx (table/cards, pagination, dialogs)"]
+    PersonDialog["PersonDialog.jsx (homeworld, species, films)"]
+    VehiclesDialog["VehiclesDialog.jsx (vehicles + starships)"]
+    Theme["app/theme.js (MUI theme)"]
+    URLSync["URL sync (?q, page)"]
 
     Index --> Main --> Providers --> App
     App --> Theme
     App --> PeoplePage
     PeoplePage --> PeopleTable
+    PeoplePage <--> URLSync
     PeopleTable --> PersonDialog
     PeopleTable --> VehiclesDialog
-
-    URLSync["URL (?q=&page=)\nwindow.history.replaceState"]
-    PeoplePage <--> URLSync
   end
 
-  %% ---------- Redux Store ----------
-  subgraph StoreLayer["Redux Toolkit Store • app/store.js"]
-    Store[(store.js)]
-    PeopleSlice["peopleSlice\nsearch, page"]
-    SystemSlice["systemSlice\napiBaseUrl, usingFallback"]
-    ApiReducer["swapiApi.reducer\n+ swapiApi.middleware"]
-    Store --- PeopleSlice
-    Store --- SystemSlice
-    Store --- ApiReducer
+  %% Redux store
+  subgraph Store["Redux Toolkit store (app/store.js)"]
+    PeopleSlice["peopleSlice (search, page)"]
+    SystemSlice["systemSlice (apiBaseUrl, usingFallback)"]
+    ApiReducer["swapiApi reducer + middleware"]
+    StoreRoot[(store.js)]
+    StoreRoot --- PeopleSlice
+    StoreRoot --- SystemSlice
+    StoreRoot --- ApiReducer
   end
+  Providers --> StoreRoot
 
-  Providers --> Store
-
-  %% ---------- RTK Query ----------
-  subgraph RTKQ["RTK Query • services/swapiApi.js"]
-    Endpoints["Endpoints:\n- getAllPeopleSorted\n- getPeople\n- getManyByUrls\n- getVehicleById / getVehiclesByIds"]
+  %% RTK Query
+  subgraph RTKQ["RTK Query (services/swapiApi.js)"]
+    Endpoints["Endpoints: getAllPeopleSorted, getPeople, getManyByUrls, getVehicleById(s)"]
     BaseQ["baseQueryWithFallback.js"]
-    Cache["RTKQ Cache"]
     Endpoints --> BaseQ
-    Endpoints --> Cache
   end
-
-  %% UI -> State/Data flows
-  PeoplePage -. "dispatch setSearch/setPage" .-> PeopleSlice
   PeopleTable --> Endpoints
   PersonDialog --> Endpoints
   VehiclesDialog --> Endpoints
 
-  %% ---------- Network / APIs ----------
-  BaseQ --> Primary["SWAPI Primary\n(VITE_SWAPI_BASE_URL)"]
-  BaseQ -. "on FETCH_ERROR" .-> Fallback["SWAPI Fallback\n(VITE_SWAPI_FALLBACK_BASE_URL)"]
+  %% Network
+  BaseQ --> Primary["SWAPI primary (VITE_SWAPI_BASE_URL)"]
+  BaseQ -. "on FETCH_ERROR" .-> Fallback["SWAPI fallback (VITE_SWAPI_FALLBACK_BASE_URL)"]
   BaseQ --> SystemSlice
 
-  %% ---------- Assets & Images ----------
-  subgraph Assets["Images & Utilities"]
-    ImageMaps["data/imageMap.js\nutils/imageUrls.js\nutils/extractId.js"]
-    ImageComp["components/ImageWithFallback.jsx"]
+  %% Images & utils
+  subgraph Assets["Images & utils"]
+    ImageWithFallback["ImageWithFallback.jsx"]
+    ImageMaps["data/imageMap.js, utils/imageUrls.js, utils/extractId.js"]
   end
-  PeopleTable --> ImageComp
-  PersonDialog --> ImageComp
-  VehiclesDialog --> ImageComp
-  ImageComp --> ImageMaps
+  PeopleTable --> ImageWithFallback
+  PersonDialog --> ImageWithFallback
+  VehiclesDialog --> ImageWithFallback
+  ImageWithFallback --> ImageMaps
 ```
 
 ---
