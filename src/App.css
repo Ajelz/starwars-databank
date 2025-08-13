@@ -1,0 +1,64 @@
+/* Starfield canvas sits behind everything */
+html,
+body,
+#root {
+  height: 100%;
+  background: transparent;
+}
+
+body {
+  margin: 0;
+  isolation: isolate;
+}
+
+/* image improvevements */
+img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Search highlight outline */
+mark {
+  background: rgba(255, 234, 0, 0.25);
+  color: inherit;
+  padding: 0 0.15em;
+  border-radius: 3px;
+}
+
+/* app bar glass */
+.MuiAppBar-root {
+  backdrop-filter: saturate(160%) blur(6px);
+  -webkit-backdrop-filter: saturate(160%) blur(6px);
+  background-color: rgba(0, 0, 0, 0.28);
+}
+
+@media (prefers-color-scheme: light) {
+  .MuiAppBar-root {
+    background-color: rgba(255, 255, 255, 0.65);
+  }
+}
+
+/* button glow */
+.MuiButton-contained {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.MuiButton-contained:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+/* Dialog padding on mobile */
+@media (max-width: 600px) {
+  .MuiDialogContent-root {
+    padding: 16px !important;
+  }
+
+  .MuiDialogActions-root {
+    padding: 12px 16px !important;
+  }
+}
+
+/* Table header readability for dark mode */
+.MuiTableHead-root .MuiTableCell-root {
+  font-weight: 700;
+}
