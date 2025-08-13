@@ -24,13 +24,6 @@ VITE_SWAPI_FALLBACK_BASE_URL=https://swapi.dev/api/
 > **Note:** The main `swapi.dev` API currently has an expired SSL certificate (about 120 days old).  
 > For reliability, I configured the app to use `swapi.py4e.com` as the primary API and `swapi.dev` as a fallback.
 
-**Environment variables (Vite)**
-
-- `VITE_SWAPI_BASE_URL` — primary SWAPI base (defaults to `https://swapi.py4e.com/api/` if not set).
-- `VITE_SWAPI_FALLBACK_BASE_URL` — optional fallback API.
-
-The current API host (or fallback if active) is displayed as an MUI Chip in the top AppBar
-
 ---
 
 ### 3) Run in development
@@ -73,21 +66,78 @@ npm run preview
 ## Top-level Architecture
 
 ```mermaid
-flowchart LR
-  Vite["Vite (dev, build)"]
-  React["React 19 App\n(main.jsx → App.jsx)"]
-  Store["Redux Toolkit store\n(app/store.js)"]
-  RTKQ["RTK Query API slice\n(services/swapiApi.js)\nbaseQueryWithFallback(...)"]
-  Primary["SWAPI Primary\n(VITE_SWAPI_BASE_URL)"]
-  Fallback["SWAPI Fallback\n(VITE_SWAPI_FALLBACK_BASE_URL)"]
-  MUI["MUI Theme\n(app/theme.js)\nColorModeContext"]
+flowchart TB
+  %% ---------- Build / HTML ----------
+  subgraph Build["Build & HTML"]
+    Vite["Vite (dev/build)"]
+    Index["index.html"]
+    Vite --> Index
+  end
 
-  Vite --> React
-  React --> MUI
-  React --> Store
-  Store --> RTKQ
-  RTKQ --> Primary
-  RTKQ -. network failover .-> Fallback
+  %% ---------- React SPA ----------
+  subgraph SPA["React 19 Single-Page App"]
+    Main["src/main.jsx\nRoot mount"]
+    Providers["<Provider store>\nColorModeContext\n<ThemeProvider> + <CssBaseline>"]
+    App["src/App.jsx\nAppBar • GlobalProgress • Container • Footer • Starfield"]
+    PeoplePage["features/people/PeoplePage.jsx\nSearch (debounced) + URL sync"]
+    PeopleTable["features/people/PeopleTable.jsx\nTable/cards • pagination • dialogs"]
+    PersonDialog["features/people/PersonDialog.jsx\nhomeworld/species/films"]
+    VehiclesDialog["features/vehicles/VehiclesDialog.jsx\nvehicles + starships"]
+    Theme["app/theme.js\nMUI theme"]
+
+    Index --> Main --> Providers --> App
+    App --> Theme
+    App --> PeoplePage
+    PeoplePage --> PeopleTable
+    PeopleTable --> PersonDialog
+    PeopleTable --> VehiclesDialog
+
+    URLSync["URL (?q=&page=)\nwindow.history.replaceState"]
+    PeoplePage <--> URLSync
+  end
+
+  %% ---------- Redux Store ----------
+  subgraph StoreLayer["Redux Toolkit Store • app/store.js"]
+    Store[(store.js)]
+    PeopleSlice["peopleSlice\nsearch, page"]
+    SystemSlice["systemSlice\napiBaseUrl, usingFallback"]
+    ApiReducer["swapiApi.reducer\n+ swapiApi.middleware"]
+    Store --- PeopleSlice
+    Store --- SystemSlice
+    Store --- ApiReducer
+  end
+
+  Providers --> Store
+
+  %% ---------- RTK Query ----------
+  subgraph RTKQ["RTK Query • services/swapiApi.js"]
+    Endpoints["Endpoints:\n- getAllPeopleSorted\n- getPeople\n- getManyByUrls\n- getVehicleById / getVehiclesByIds"]
+    BaseQ["baseQueryWithFallback.js"]
+    Cache["RTKQ Cache"]
+    Endpoints --> BaseQ
+    Endpoints --> Cache
+  end
+
+  %% UI -> State/Data flows
+  PeoplePage -. "dispatch setSearch/setPage" .-> PeopleSlice
+  PeopleTable --> Endpoints
+  PersonDialog --> Endpoints
+  VehiclesDialog --> Endpoints
+
+  %% ---------- Network / APIs ----------
+  BaseQ --> Primary["SWAPI Primary\n(VITE_SWAPI_BASE_URL)"]
+  BaseQ -. "on FETCH_ERROR" .-> Fallback["SWAPI Fallback\n(VITE_SWAPI_FALLBACK_BASE_URL)"]
+  BaseQ --> SystemSlice
+
+  %% ---------- Assets & Images ----------
+  subgraph Assets["Images & Utilities"]
+    ImageMaps["data/imageMap.js\nutils/imageUrls.js\nutils/extractId.js"]
+    ImageComp["components/ImageWithFallback.jsx"]
+  end
+  PeopleTable --> ImageComp
+  PersonDialog --> ImageComp
+  VehiclesDialog --> ImageComp
+  ImageComp --> ImageMaps
 ```
 
 ---
