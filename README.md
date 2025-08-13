@@ -73,12 +73,21 @@ npm run preview
 ## Top-level Architecture
 
 ```mermaid
+flowchart LR
+  Vite["Vite (dev, build)"]
+  React["React 19 App\n(main.jsx → App.jsx)"]
+  Store["Redux Toolkit store\n(app/store.js)"]
+  RTKQ["RTK Query API slice\n(services/swapiApi.js)\nbaseQueryWithFallback(...)"]
+  Primary["SWAPI Primary\n(VITE_SWAPI_BASE_URL)"]
+  Fallback["SWAPI Fallback\n(VITE_SWAPI_FALLBACK_BASE_URL)"]
+  MUI["MUI Theme\n(app/theme.js)\nColorModeContext"]
+
   Vite --> React
   React --> MUI
   React --> Store
   Store --> RTKQ
   RTKQ --> Primary
-  RTKQ -> network failover -> Fallback
+  RTKQ -. network failover .-> Fallback
 ```
 
 ---
